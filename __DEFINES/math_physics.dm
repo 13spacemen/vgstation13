@@ -59,3 +59,10 @@
 #define IS_INT(x) (x == round(x))
 
 #define GLIDE_SIZE_OF_A_WALKING_HUMAN 2.4615386
+
+#define CEILING(x, y) ( -round(-(x) / (y)) * (y) )
+// round() acts like floor(x, 1) by default but can't handle other values
+#define FLOOR(x, y) ( round((x) / (y)) * (y) )
+
+// Real modulus that handles decimals
+#define MODULUS(x, y) ( (x) - FLOOR(x, y))

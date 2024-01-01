@@ -340,6 +340,11 @@ var/list/whitelist_name_diacritics_min = list(
 /proc/capitalize(var/t as text)
 	return uppertext(copytext_char(t, 1, 2)) + copytext_char(t, 2)
 
+///Returns a string with the first letter of each word capitialized
+/proc/full_capitalize(input)
+	var/regex/first_letter = new(@"[^A-z]*?([A-z]*)", "g")
+	return replacetext(input, first_letter, /proc/capitalize)
+
 //Centers text by adding spaces to either side of the string.
 /proc/dd_centertext(message, length)
 	var/new_message = message

@@ -454,19 +454,10 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 			manual_follow(target)
 
 	if (href_list["jump"])
+
 		var/mob/target = locate(href_list["jump"])
-		var/mob/A = usr;
-		to_chat(A, "Teleporting to [target]...")
-		if(target && target != usr)
-			var/turf/pos = get_turf(A)
-			var/turf/T=get_turf(target)
-			if(T != pos)
-				if(!T)
-					to_chat(A, "<span class='warning'>Target not in a turf.</span>")
-					return
-				if(locked_to)
-					manual_stop_follow(locked_to)
-				forceMove(T)
+		var/mob/the_ghost = usr;
+		ghost_jump_to(target, the_ghost)
 
 	if(href_list["jumptoarenacood"])
 		var/datum/bomberman_arena/targetarena = locate(href_list["targetarena"])
@@ -485,6 +476,19 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 
 /mob/dead/observer/dexterity_check()
 	return 1
+
+/mob/dead/observer/proc/ghost_jump_to(atom/target, mob/dead/observer/ghost)
+	to_chat(ghost, "Teleporting to [target]...")
+	if(target && target != usr)
+		var/turf/ghost_turf = get_turf(ghost)
+		var/turf/target_turf = get_turf(target)
+		if(target_turf != ghost_turf)
+			if(!target_turf)
+				to_chat(ghost, "<span class='warning'>Target not in a turf.</span>")
+				return
+			if(locked_to)
+				manual_stop_follow(locked_to)
+			forceMove(target_turf)
 
 //this is a mob verb instead of atom for performance reasons
 //see /mob/verb/examinate() in mob.dm for more info

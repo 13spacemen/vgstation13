@@ -136,22 +136,13 @@
 	return 0
 
 /obj/effect/blob/core/proc/recruit_overmind()
-	var/list/possible_candidates = get_candidates(BLOBOVERMIND)
-	var/icon/logo_icon = icon('icons/logos.dmi', "blob-logo")
-	for(var/client/candidate in possible_candidates)
-		if(istype(candidate.eye,/obj/item/projectile/meteor/blob/core))
-			continue
-		to_chat(candidate.mob, "[bicon(logo_icon)]<span class='recruit'>A blob core is looking for someone to become its overmind. (<a href='?src=\ref[src];blob_recruit=\ref[candidate.mob]'>Apply now!</a>)</span>[bicon(logo_icon)]")
-
-/obj/effect/blob/core/Topic(href, href_list)
-	if(usr.stat != DEAD)
-		return
-
-	if(href_list["blob_recruit"])//We don't have time to wait for the recruiter, just grab whoever applied first!
-		if(!overmind)
-			create_overmind(usr.client)
-		else
-			to_chat(usr, "<span class='warning'>Looks like someone applied first. First arrived, first served. Better luck next time.</span>")
+	var/list/possible_candidates = SSpolling.poll_ghost_candidates(role = BLOBOVERMIND, poll_time = 10 SECONDS, pic_source = src)
+	for(var/mob/candidate as anything in possible_candidates)
+		if(istype(candidate.client.eye,/obj/item/projectile/meteor/blob/core))
+			possible_candidates -= candidate
+	var/mob/chosen_candidate = pick(possible_candidates)
+	if(!overmind)
+		create_overmind(chosen_candidate.client)
 
 /obj/effect/blob/core/attack_ghost(var/mob/user)
 	if (no_ghosts_allowed)
@@ -167,10 +158,6 @@
 
 /obj/effect/blob/core/proc/create_overmind(var/client/new_overmind)
 	if(!new_overmind)
-		return 0
-
-	if (jobban_isbanned(new_overmind.mob, BLOBOVERMIND) || isantagbanned(new_overmind.mob))
-		to_chat(usr, "<span class='warning'>You are banned from this role.</span>")
 		return 0
 
 	if(overmind)

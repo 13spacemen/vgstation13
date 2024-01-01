@@ -11,8 +11,8 @@
 //Clicks are forwarded to master
 //override makes it so the alert is not replaced until cleared by a clear_alert with clear_override.
 
-/mob/proc/throw_alert(category, alert_type, severity, obj/new_master, override = FALSE)
-	if(!category || gcDestroyed)
+/mob/proc/throw_alert(category, alert_type, severity, obj/new_master, override = FALSE, timeout_override, no_anim = FALSE)
+	if(!category || QDELETED(src))
 		return
 
 	var/obj/abstract/screen/alert/new_alert = null
@@ -28,10 +28,14 @@
 			clear_alert(category)
 			return .()
 		else if(!severity || severity == new_alert.severity)
-			if(new_alert.timeout)
-				clear_alert(category)
-				return .()
-			return FALSE
+			if(!new_alert.timeout)
+				// No need to update existing alert
+				return new_alert
+			// Reset timeout of existing alert
+			var/timeout = timeout_override || initial(new_alert.timeout)
+			add_timer(new /callback(src, nameof(src::alert_timeout()), new_alert, category), timeout)
+			new_alert.timeout = world.time + timeout - world.tick_lag
+			return new_alert
 	else
 		new_alert = new alert_type()
 		new_alert.category = category
@@ -56,23 +60,40 @@
 
 	if(client && hud_used)
 		hud_used.reorganize_alerts()
-	new_alert.transform = matrix(32, 6, MATRIX_TRANSLATE)
-	animate(new_alert, transform = matrix(), time = 2.5, easing = CUBIC_EASING)
+	if(!no_anim)
+		new_alert.transform = matrix(32, 6, MATRIX_TRANSLATE)
+		animate(new_alert, transform = matrix(), time = 2.5, easing = CUBIC_EASING)
+	if(timeout_override)
+		new_alert.timeout = timeout_override
+	if(new_alert.timeout)
+		add_timer(new /callback(src, nameof(src::alert_timeout()), new_alert, category), new_alert.timeout)
+		new_alert.timeout = world.time + new_alert.timeout - world.tick_lag
 	return new_alert
+
+/mob/proc/alert_timeout(obj/abstract/screen/alert/alert, category)
+	if(alert.timeout && alerts[category] == alert && world.time >= alert.timeout)
+		clear_alert(category)
 
 // Proc to clear an existing alert.
 /mob/proc/clear_alert(category, clear_override = FALSE)
 	var/obj/abstract/screen/alert/alert = alerts[category]
 	if(!alert)
-		return FALSE
+		return 0
 	if(alert.override_alerts && !clear_override)
-		return FALSE
+		return 0
+	alerts -= category
+	if(client && hud_used)
+		hud_used.reorganize_alerts()
+		client.screen -= alert
 	qdel(alert)
 
 /mob/proc/clear_all_alerts()
 	for(var/category in alerts)
 		clear_alert(category)
 
+// Proc to check for an alert
+/mob/proc/has_alert(category)
+	return !isnull(alerts[category])
 
 // PRIVATE = only edit, use, or override these if you're editing the system as a whole
 
@@ -159,13 +180,8 @@ var/global/list/screen_alarms_locs = list(
 
 /obj/abstract/screen/alert/New()
 	..()
-	if(timeout)
-		add_timer(new /callback(src, nameof(src::qdel_self())), timeout)
 	if(emph)
 		overlays.Add(image('icons/mob/screen_alarms.dmi', icon_state = "emph_outline"))
-
-/obj/abstract/screen/alert/proc/qdel_self()
-	qdel(src)
 
 /obj/abstract/screen/alert/Destroy()
 	if(owner)
@@ -452,3 +468,145 @@ so as to remain in compliance with the most up-to-date laws."
 	var/mob/living/silicon/robot/R = usr
 	R.install_upgrade(R, /obj/item/borg/upgrade/reset)
 	qdel(src)
+
+/obj/abstract/screen/alert/poll_alert
+	name = "Looking for candidates"
+	icon_state = "template"
+	timeout = 30 SECONDS
+	/// If true you need to call START_PROCESSING manually
+	var/show_time_left = FALSE
+	/// MA for maptext showing time left for poll
+	var/mutable_appearance/time_left_overlay
+	/// image for overlay showing that you're signed up to poll
+	var/image/signed_up_overlay
+	/// MA for maptext overlay showing how many polls are stacked together
+	var/mutable_appearance/stacks_overlay
+	/// MA for maptext overlay showing how many candidates are signed up to a poll
+	var/mutable_appearance/candidates_num_overlay
+	/// MA for maptext overlay of poll's role name or question
+	var/mutable_appearance/role_overlay
+	/// If set, on Click() it'll register the player as a candidate
+	var/datum/candidate_poll/poll
+
+/obj/abstract/screen/alert/poll_alert/New()
+	. = ..()
+	signed_up_overlay = image('icons/mob/screen1.dmi', icon_state = "selector")
+	signed_up_overlay.layer = FLOAT_LAYER
+	signed_up_overlay.plane = FLOAT_PLANE + 1
+
+/obj/abstract/screen/alert/poll_alert/proc/set_role_overlay()
+	var/role_or_only_question = poll.role || "?"
+	role_overlay = new
+	role_overlay.layer = FLOAT_LAYER
+	role_overlay.plane = FLOAT_PLANE + 1
+	role_overlay.screen_loc = screen_loc
+	role_overlay.maptext = MAPTEXT("<span style='text-align: right; color: #B3E3FC; -dm-text-outline: 1px black'>[full_capitalize(role_or_only_question)]</span>")
+	role_overlay.maptext_width = 128
+	role_overlay.transform = role_overlay.transform.Translate(-128, 0)
+	overlays += role_overlay
+
+/obj/abstract/screen/alert/poll_alert/Destroy()
+	QDEL_NULL(role_overlay)
+	QDEL_NULL(time_left_overlay)
+	QDEL_NULL(stacks_overlay)
+	QDEL_NULL(candidates_num_overlay)
+	QDEL_NULL(signed_up_overlay)
+	if(poll)
+		poll.alert_buttons -= src
+	poll = null
+	return ..()
+
+/obj/abstract/screen/alert/poll_alert/process()
+	if(show_time_left)
+		var/timeleft = timeout - world.time
+		if(timeleft <= 0)
+			return PROCESS_KILL
+		overlays -= time_left_overlay
+		time_left_overlay = new
+		time_left_overlay.layer = FLOAT_LAYER
+		time_left_overlay.plane = FLOAT_PLANE + 1
+		time_left_overlay.maptext = MAPTEXT("<span style='font-weight: bold; font-size: 8px; color: [(timeleft <= 10 SECONDS) ? "red" : "white"]; -dm-text-outline: 1px black'><b>[CEILING(timeleft / (1 SECONDS), 1)]</b></span>")
+		time_left_overlay.transform = time_left_overlay.transform.Translate(4, 19)
+		overlays += time_left_overlay
+	if(isnull(poll))
+		return
+
+/obj/abstract/screen/alert/poll_alert/Click(location, control, params)
+	. = ..()
+	if(isnull(poll))
+		return
+	var/list/modifiers = params2list(params)
+	if(modifiers["alt"])
+		set_never_round()
+		return
+	if(modifiers["ctrl"] && poll.jump_to_me)
+		jump_to_pic_source()
+		return
+	handle_sign_up()
+
+/obj/abstract/screen/alert/poll_alert/proc/handle_sign_up()
+	if(owner in poll.signed_up)
+		poll.remove_candidate(owner)
+	else if(!(owner.client.prefs.roles[poll.role] == ROLEPREF_NO))
+		poll.sign_up(owner)
+	update_signed_up_overlay()
+
+/obj/abstract/screen/alert/poll_alert/proc/set_never_round()
+	if(!(owner.client.prefs.roles[poll.role] == ROLEPREF_NO))
+		poll.do_never_for_this_round(owner)
+		color = "red"
+		update_signed_up_overlay()
+		return
+	poll.undo_never_for_this_round(owner)
+	color = initial(color)
+
+/obj/abstract/screen/alert/poll_alert/proc/jump_to_pic_source()
+	if(!poll?.jump_to_me || !isobserver(owner))
+		return
+	var/turf/target_turf = get_turf(poll.jump_to_me)
+	if(target_turf && isturf(target_turf))
+		var/mob/dead/observer/ghost_owner = owner
+		ghost_owner.ghost_jump_to(target_turf)
+
+/obj/abstract/screen/alert/poll_alert/Topic(href, href_list)
+	if(href_list["never"])
+		set_never_round()
+		return
+	if(href_list["signup"])
+		handle_sign_up()
+	if(href_list["jump"])
+		jump_to_pic_source()
+		return
+
+/obj/abstract/screen/alert/poll_alert/proc/update_signed_up_overlay()
+	if(owner in poll.signed_up)
+		overlays += signed_up_overlay
+	else
+		overlays -= signed_up_overlay
+
+/obj/abstract/screen/alert/poll_alert/proc/update_candidates_number_overlay()
+	overlays -= candidates_num_overlay
+	if(!length(poll.signed_up))
+		return
+	candidates_num_overlay = new
+	candidates_num_overlay.layer = FLOAT_LAYER
+	candidates_num_overlay.plane = FLOAT_PLANE + 1
+	candidates_num_overlay.maptext = MAPTEXT("<span style='text-align: right; color: aqua; -dm-text-outline: 1px black'>[length(poll.signed_up)]</span>")
+	candidates_num_overlay.transform = candidates_num_overlay.transform.Translate(-4, 2)
+	overlays += candidates_num_overlay
+
+/obj/abstract/screen/alert/poll_alert/proc/update_stacks_overlay()
+	overlays -= stacks_overlay
+	var/stack_number = 1
+	for(var/datum/candidate_poll/other_poll as anything in SSpolling.currently_polling)
+		if(other_poll != poll && other_poll.poll_key == poll.poll_key && !other_poll.finished)
+			stack_number++
+	if(stack_number <= 1)
+		return
+	stacks_overlay = new
+	stacks_overlay.layer = FLOAT_LAYER
+	stacks_overlay.plane = FLOAT_PLANE + 1
+	stacks_overlay.maptext = MAPTEXT("<span style='color: yellow; -dm-text-outline: 1px black'>[stack_number]x</span>")
+	stacks_overlay.transform = stacks_overlay.transform.Translate(3, 2)
+	stacks_overlay.layer = layer
+	overlays += stacks_overlay
