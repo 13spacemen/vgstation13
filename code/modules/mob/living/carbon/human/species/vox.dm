@@ -5,7 +5,7 @@
 	known_languages = list(LANGUAGE_VOX)
 	meat_type = /obj/item/weapon/reagent_containers/food/snacks/meat/rawchicken/vox
 	tacklePower = 40
-	anatomy_flags = HAS_SWEAT_GLANDS | HAS_ICON_SKIN_TONE | HAS_TAIL | TAIL_OVERLAPPED
+	anatomy_flags = HAS_SWEAT_GLANDS | TAIL_WAGGING | HAS_ICON_SKIN_TONE | HAS_TAIL | TAIL_OVERLAPPED
 
 	survival_gear = /obj/item/weapon/storage/box/survival/vox
 
@@ -24,8 +24,7 @@
 	blood_color = VOX_BLOOD
 	flesh_color = "#808D11"
 	max_skin_tone = 6
-	tail = "green"
-	tail_icon = 'icons/mob/human_races/vox/tails.dmi'
+	tail = "voxtail"
 	footprint_type = /obj/effect/decal/cleanable/blood/tracks/footprints/vox //Bird claws
 
 	uniform_icons = 'icons/mob/species/vox/uniform.dmi'
@@ -87,6 +86,7 @@
 	H.update_icon()
 
 /datum/species/vox/handle_death(mob/living/carbon/human/vox, gibbed = FALSE)
+	vox.is_wagging_tail = FALSE
 	vox.update_tail_layer()
 
 /datum/species/vox/updatespeciescolor(mob/living/carbon/human/vox)
@@ -94,27 +94,27 @@
 		if(VOXEMERALD)
 			icobase = 'icons/mob/human_races/vox/r_voxemrl.dmi'
 			deform = 'icons/mob/human_races/vox/r_def_voxemrl.dmi'
-			vox.tail = "emerald"
+			vox.tail = "voxtail_emrl"
 		if(VOXAZURE)
 			icobase = 'icons/mob/human_races/vox/r_voxazu.dmi'
 			deform = 'icons/mob/human_races/vox/r_def_voxazu.dmi'
-			vox.tail = "azure"
+			vox.tail = "voxtail_azu"
 		if(VOXLGREEN)
 			icobase = 'icons/mob/human_races/vox/r_voxlgrn.dmi'
 			deform = 'icons/mob/human_races/vox/r_def_voxlgrn.dmi'
-			vox.tail = "lightgreen"
+			vox.tail = "voxtail_lgrn"
 		if(VOXGRAY)
 			icobase = 'icons/mob/human_races/vox/r_voxgry.dmi'
 			deform = 'icons/mob/human_races/vox/r_def_voxgry.dmi'
-			vox.tail = "grey"
+			vox.tail = "voxtail_gry"
 		if(VOXBROWN)
 			icobase = 'icons/mob/human_races/vox/r_voxbrn.dmi'
 			deform = 'icons/mob/human_races/vox/r_def_voxbrn.dmi'
-			vox.tail = "brown"
+			vox.tail = "voxtail_brn"
 		else
 			icobase = 'icons/mob/human_races/vox/r_vox.dmi'
 			deform = 'icons/mob/human_races/vox/r_def_vox.dmi'
-			vox.tail = "green"
+			vox.tail = "voxtail"
 
 /datum/species/skellington/skelevox // Science never goes too far, it's the public that's too conservative
 	name = "Skeletal Vox"
