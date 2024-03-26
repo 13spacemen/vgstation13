@@ -1503,16 +1503,20 @@ Note that amputating the affected organ does in fact remove the infection from t
 	body_part = HAND_RIGHT
 	grasp_id = GRASP_RIGHT_HAND
 	can_grasp = 1
-
 	slots_to_drop = list(slot_gloves, slot_handcuffed)
+	var/hand_type = /obj/item/organ/external/r_hand
 
 /datum/organ/external/r_hand/generate_dropped_organ(current_organ)
 	if(is_peg())
 		current_organ = new /obj/item/weapon/peglimb(owner.loc)
 	if(!current_organ)
 		if(!is_robotic())
-			current_organ = new /obj/item/organ/external/r_hand(owner.loc, owner, src)
+			current_organ = new hand_type(owner.loc, owner, src)
 	return current_organ
+
+/datum/organ/external/r_hand/on_attach(obj/item/organ/external/r_hand/hand_item)
+	display_name = hand_item.name
+	hand_type = hand_item.type
 
 /datum/organ/external/l_hand
 	name = LIMB_LEFT_HAND
@@ -1887,6 +1891,15 @@ Note that amputating the affected organ does in fact remove the infection from t
 	icon_state = LIMB_RIGHT_HAND
 	part = LIMB_RIGHT_HAND
 	w_class = W_CLASS_TINY
+	var/attack_verb_text
+	var/is_dexterous = TRUE
+	var/attack_punch_damage
+
+/obj/item/organ/external/r_hand/crab
+	name = "right claw"
+	attack_verb_text = "pinches"
+	is_dexterous = FALSE
+	attack_punch_damage = 0
 
 /obj/item/organ/external/r_leg
 	name = "right leg"

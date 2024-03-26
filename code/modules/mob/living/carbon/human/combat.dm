@@ -112,25 +112,37 @@
 	else
 		return src.mutations.Find(mutation)
 
+/mob/living/carbon/human/proc/get_attack_verb()
+	var/hand_obj_text
+	var/datum/organ/external/active_hand_organ_datum = get_active_hand_organ()
+	var/datum/species/hand_species = get_organ_species(active_hand_organ_datum)
+	var/obj/item/organ/external/hand_obj_type = new active_hand_organ_datum:hand_type
+	hand_obj_text = hand_obj_type:attack_verb_text
+	return hand_obj_text || hand_species.attack_verb
+
+/mob/living/carbon/human/proc/get_punch_damage()
+	var/hand_obj_damage
+	var/datum/organ/external/active_hand_organ_datum = get_active_hand_organ()
+	var/datum/species/hand_species = get_organ_species(active_hand_organ_datum)
+	var/obj/item/organ/external/hand_obj_type = new active_hand_organ_datum:hand_type
+	hand_obj_damage = hand_obj_type:attack_punch_damage
+	return hand_obj_damage || hand_species.punch_damage
+
 /mob/living/carbon/human/get_unarmed_verb()
 	if(istype(gloves))
 		var/obj/item/clothing/gloves/G = gloves
 		if(G.attack_verb_override)
 			return G.attack_verb_override
-
-	var/datum/species/S = get_organ_species(get_active_hand_organ())
-	return S.attack_verb
+	return get_attack_verb()
 
 /mob/living/carbon/human/get_unarmed_hit_sound()
 	if(istype(gloves))
 		var/obj/item/clothing/gloves/G = gloves
 		return G.get_hitsound_added()
-	var/datum/species/S = get_organ_species(get_active_hand_organ())
-	return (S.attack_verb == "punches" ? "punch" : 'sound/weapons/slice.ogg')
+	return (get_attack_verb() == "punches" ? "punch" : 'sound/weapons/slice.ogg')
 
 /mob/living/carbon/human/get_unarmed_miss_sound()
-	var/datum/species/S = get_organ_species(get_active_hand_organ())
-	return (S.attack_verb == "punches" ? 'sound/weapons/punchmiss.ogg' : 'sound/weapons/slashmiss.ogg')
+	return (get_attack_verb() == "punches" ? 'sound/weapons/punchmiss.ogg' : 'sound/weapons/slashmiss.ogg')
 
 /mob/living/carbon/human/get_unarmed_damage_type(mob/living/target)
 	if(ishuman(target) && istype(gloves , /obj/item/clothing/gloves/boxing/hologlove))
