@@ -1894,12 +1894,14 @@ Note that amputating the affected organ does in fact remove the infection from t
 	var/attack_verb_text
 	var/is_dexterous = TRUE
 	var/attack_punch_damage
+	var/list/mutations = list()
 
 /obj/item/organ/external/r_hand/crab
 	name = "right claw"
 	attack_verb_text = "pinches"
 	is_dexterous = FALSE
-	attack_punch_damage = 0
+	attack_punch_damage = 7
+	mutations = list(M_CLAWS)
 
 /obj/item/organ/external/r_leg
 	name = "right leg"

@@ -338,15 +338,6 @@ var/global/list/playable_species = list("Human")
 /datum/species/proc/conditional_playable()
 	return 0
 
-/datum/species/proc/get_punch_damage()
-	var/mob/living/carbon/human/my_human = myhuman
-	var/hand_obj_damage
-	var/datum/organ/external/active_hand_organ_datum = my_human.get_active_hand_organ()
-	var/datum/species/hand_species = my_human.get_organ_species(active_hand_organ_datum)
-	var/obj/item/organ/external/hand_obj_type = new active_hand_organ_datum:hand_type
-	hand_obj_text = hand_obj_type:attack_verb_text
-	return hand_obj_text || hand_species.attack_verb
-
 /datum/species/human
 	name = "Human"
 	known_languages = list(LANGUAGE_HUMAN)
