@@ -19,10 +19,13 @@
 		if(screen.anim_state)
 			flick("[screen.anim_state][severity]",screen)
 		client.screen += screen
-		if (screen.screen_loc == "CENTER-7,CENTER-7" && screen.view != client.view && screen.scaling)
-			var/scale = (1 + 2 * client.view) / 15
-			screen.view = client.view
-			screen.transform = matrix(scale, 0, 0, 0, scale, 0)
+		var/list/client_view_dimensions = getviewsize(client.view)
+		if(screen.screen_loc == "CENTER-7,CENTER-7" && (screen.view_x != view_tiles_after_center(client_view_dimensions[1]) || screen.view_y != view_tiles_after_center(client_view_dimensions[2])) && screen.scaling)
+			var/scale_x = client_view_dimensions[1] / 15
+			var/scale_y = client_view_dimensions[2] / 15
+			screen.view_x = view_tiles_after_center(client_view_dimensions[1])
+			screen.view_y = view_tiles_after_center(client_view_dimensions[2])
+			screen.transform = matrix(scale_x, scale_y, MATRIX_SCALE)
 		if(screen.clear_after_length)
 			spawn(screen.clear_after_length)
 				clear_fullscreen(category, animate = 0)
@@ -86,7 +89,8 @@
 	layer = FULLSCREEN_LAYER
 	plane = FULLSCREEN_PLANE
 	mouse_opacity = 0
-	var/view = 7
+	var/view_x = 7
+	var/view_y = 7
 	var/severity = 0
 	var/anim_state
 	var/clear_after_length // also doubles as the length of the animation
