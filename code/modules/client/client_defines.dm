@@ -25,6 +25,12 @@
 	var/list/radial_menus = list()
 	var/click_held_down_time //Used by MouseDown in _onclick/click.dm
 
+	/// datum wrapper for client view
+	var/datum/view_data/view_size
+
+	/// If this client has been fully initialized or not
+	var/fully_created = FALSE
+
 		///////////////
 		//SOUND STUFF//
 		///////////////
@@ -50,6 +56,8 @@
 	//This breaks a lot of shit.  - N3X
 	preload_rsc = 1 // This is 0 on the host server so we can set it to an URL once the player logs in and have them download the resources from a different server.
 
+	var/obj/abstract/screen/click_catcher/void
+
 	// Used by html_interface module.
 	var/hi_last_pos
 
@@ -59,7 +67,7 @@
 	var/datum/media_manager/media = null
 
 	var/filling = 0 //SOME STUPID SHIT POMF IS DOING
-	var/haszoomed = 0
+	var/haszoomed = FALSE
 
 	// Their chat window, sort of important.
 	// See /goon/code/datums/browserOutput.dm
